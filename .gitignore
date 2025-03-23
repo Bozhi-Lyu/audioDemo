@@ -1,0 +1,3 @@
+# Ignore raw and processed data directories
+data/raw/
+data/processed/

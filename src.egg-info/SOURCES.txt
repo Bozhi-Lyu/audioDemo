@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+requirements.txt
+src/__init__.py
+src/data_loader.py
+src/evaluate.py
+src/main.py
+src/train.py
+src/utils.py
+src.egg-info/PKG-INFO
+src.egg-info/SOURCES.txt
+src.egg-info/dependency_links.txt
+src.egg-info/requires.txt
+src.egg-info/top_level.txt
