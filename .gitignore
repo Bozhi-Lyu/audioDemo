@@ -1,3 +1,8 @@
 # Ignore raw and processed data directories
 data/raw/
 data/processed/
+Deprecated/
+notebook/audio_quantization.ipynb
+notebook/audioClassificationTutorial.ipynb
+notebook/PTQdemo.ipynb
+notebook/QATdemo.ipynb
