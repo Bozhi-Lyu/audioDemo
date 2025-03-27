@@ -49,6 +49,7 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger):
     accuracy = test(model, test_loader)
     logger.info(f"Accuracy: {accuracy:.2f}%")
 
+@profile
 def test(model, test_loader):
     model.eval()
     correct = 0

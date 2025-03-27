@@ -6,3 +6,4 @@ notebook/audio_quantization.ipynb
 notebook/audioClassificationTutorial.ipynb
 notebook/PTQdemo.ipynb
 notebook/QATdemo.ipynbdeprecated/
+logs/profiling_logs/*.lprof
