@@ -32,11 +32,11 @@ def main(args):
 
         # DEBUG
         # # Retrieve the QConfig
-        qconfig = model.qconfig
+        # qconfig = model.qconfig
 
-        # # Instantiate the observers
-        activation_observer = qconfig.activation()
-        weight_observer = qconfig.weight()
+        # # # Instantiate the observers
+        # activation_observer = qconfig.activation()
+        # weight_observer = qconfig.weight()
 
         # # Print the quantization schemes
         # logger.info("Activation Observer qscheme:", activation_observer.qscheme) #  (torch.per_tensor_affine,)

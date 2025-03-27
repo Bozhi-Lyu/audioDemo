@@ -44,7 +44,7 @@
 ## Evaluation Metrics
 
 - [x] Model Size
-- [ ] Accuracy Drop
+- [x] Accuracy Drop
 - [ ] Inference Time (Latency)
 - [ ] Memory Footprint
 
