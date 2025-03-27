@@ -15,8 +15,8 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger):
     logger.info(f"Model Size: {model_size / 1024:.2f} KB")
 
     # Inference Speed
-    element = next(iter(test_loader))
-    logger.info(f"Element Shape: {element[0].shape}")
+    # element = next(iter(test_loader))
+    # logger.info(f"Element Shape: {element[0].shape}")
     # dummy_input = next(iter(test_loader))[0][0].unsqueeze(0).to(device)
     # DEBUG
     # logger.info(f"Dummy Input Shape: {dummy_input.shape}")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     model_params = config["model"]["base_cnn"]
 
     # Initialize model
-    if model_type == "qat":
+    if model_type == "cnn_qat":
         print("QAT Model")
         model = QATM5(
             n_input=model_params["n_input"],
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(args.checkpoint, map_location='cpu'))
         model.to(device) # cpu
 
-    elif model_type == "fp32":
+    elif model_type == "cnn_fp32":
         model = M5(
             n_input=model_params["n_input"],
             n_output=model_params["n_output"],

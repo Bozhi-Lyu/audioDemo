@@ -18,7 +18,7 @@ def main(args):
     
     # Initialize model
     model_config = config["model"]["base_cnn"]
-    if config["model_type"] == "qat":
+    if config["model_type"] == "cnn_qat":
         model = QATM5(n_input=model_config["n_input"],
                       n_output=model_config["n_output"],
                       stride=model_config["stride"],
@@ -49,7 +49,7 @@ def main(args):
         model.train()
         torch.ao.quantization.prepare_qat(model, inplace=True)
 
-    else:
+    elif config["model_type"] == "cnn_fp32":
         model = M5(n_input=model_config["n_input"],
                    n_output=model_config["n_output"],
                    stride=model_config["stride"],
@@ -64,20 +64,20 @@ def main(args):
     train_model(model, train_loader, test_loader, config["train"], device)
     
     # Save models
-    if config["model_type"] == "qat":
+    if config["model_type"] == "cnn_qat":
         model.to("cpu")
         logger.info("Quantizing model...")
         model.eval()
         torch.ao.quantization.convert(model, inplace=True)
 
-    # DEBUG: Check if model is quantized
-    for name, module in model.named_modules():
-        if isinstance(module, torch.ao.nn.quantized.Conv1d):
-            print(f"Quantized Conv1d: {name}")
-            print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
-        elif isinstance(module, torch.ao.nn.quantized.Linear):
-            print(f"Quantized Linear: {name}")
-            print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
+    # # DEBUG: Check if model is quantized
+    # for name, module in model.named_modules():
+    #     if isinstance(module, torch.ao.nn.quantized.Conv1d):
+    #         print(f"Quantized Conv1d: {name}")
+    #         print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
+    #     elif isinstance(module, torch.ao.nn.quantized.Linear):
+    #         print(f"Quantized Linear: {name}")
+    #         print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
          
     torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
 

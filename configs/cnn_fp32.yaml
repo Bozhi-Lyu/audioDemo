@@ -6,7 +6,7 @@ data:
   batch_size: 256
   version: "v0.1"
 
-model_type: "fp32"
+model_type: "cnn_fp32"
 
 model:
   base_cnn:

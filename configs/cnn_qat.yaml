@@ -6,7 +6,7 @@ data:
   batch_size: 256
   version: "v0.1"
 
-model_type: "qat"
+model_type: "cnn_qat"
 
 model:
   base_cnn:

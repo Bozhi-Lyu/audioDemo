@@ -39,7 +39,6 @@
             
     ```
 
-    - 
 
 ## Evaluation Metrics
 
@@ -48,17 +47,29 @@
 - [x] Inference Time (Latency)
 - [ ] Memory Footprint
 
-## Some best practices for Quantization
+## Experiment Steps
 
-Got some best practices which could be applied/tested.
+- CNN models:
+    - Model Training:
 
-- > Quantizing a model from a floating point checkpoint provides better accuracy. 
-(https://arxiv.org/abs/1806.08342) 
+    ``` bash
+    python src/main.py --config ./configs/cnn_fp32.yaml
 
-    - Insert QAT after finishing FP model training? 
-        #TODO: Compare: QAT from scratch VS QAT from fp checkpoint VS PTQ from same checkpoint
+    python src/main.py --config ./configs/cnn_qat.yaml
+    ```
 
-- 
+    - Evaluation (including inference time by profiling tools):
+
+    ``` bash
+    kernprof -l -v -o logs/profiling_logs/qat_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_qat_model.pth --config ./configs/cnn_qat.yaml
+
+    kernprof -l -v -o logs/profiling_logs/fp32_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_fp32_model.pth --config ./configs/cnn_fp32.yaml
+    ```
+
+
+
+- Transformers (Wav2Vec2)
+
 
 ## Experiment Progress
 
@@ -73,3 +84,15 @@ Got some best practices which could be applied/tested.
 ## Experiment Results
 
 See [report](/notebook/visualization.ipynb).
+
+## Some best practices for Quantization
+
+Got some best practices which could be applied/tested.
+
+- > Quantizing a model from a floating point checkpoint provides better accuracy. 
+(https://arxiv.org/abs/1806.08342) 
+
+    - Insert QAT after finishing FP model training? 
+        #TODO: Compare: QAT from scratch VS QAT from fp checkpoint VS PTQ from same checkpoint
+
+- 
