@@ -45,7 +45,7 @@
 
 - [x] Model Size
 - [x] Accuracy Drop
-- [ ] Inference Time (Latency)
+- [x] Inference Time (Latency)
 - [ ] Memory Footprint
 
 ## Some best practices for Quantization
@@ -69,3 +69,7 @@ Got some best practices which could be applied/tested.
 | Post Training Quantization (PTQ) | [ ] | [ ] | [ ] |
 | Activation-aware Weight Quantization (AWQ) | [ ] | [ ] | [ ] |
 
+
+## Experiment Results
+
+See [report](/notebook/visualization.ipynb).
