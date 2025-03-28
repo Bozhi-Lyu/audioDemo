@@ -9,3 +9,5 @@ notebook/PTQdemo.ipynb
 notebook/QATdemo.ipynbdeprecated/
 logs/profiling_logs/*.lprof
 src/__pycache__/
+src/models/__pycache__
+TODO.md

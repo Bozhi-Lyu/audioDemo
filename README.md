@@ -55,15 +55,19 @@
     ``` bash
     python src/main.py --config ./configs/cnn_fp32.yaml
 
+    python src/main.py --config ./configs/cnn_ptq.yaml
+
     python src/main.py --config ./configs/cnn_qat.yaml
     ```
 
     - Evaluation (including inference time by profiling tools):
 
     ``` bash
-    kernprof -l -v -o logs/profiling_logs/qat_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_qat_model.pth --config ./configs/cnn_qat.yaml
-
     kernprof -l -v -o logs/profiling_logs/fp32_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_fp32_model.pth --config ./configs/cnn_fp32.yaml
+
+    kernprof -l -v -o logs/profiling_logs/ptq_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_ptq_model.pth --config ./configs/cnn_ptq.yaml
+
+    kernprof -l -v -o logs/profiling_logs/qat_profiling.lprof src/evaluate.py --checkpoint ./models/cnn_qat_model.pth --config ./configs/cnn_qat.yaml
     ```
 
 
@@ -77,7 +81,7 @@
 | ---- | ---- | ---- | ---- |
 | Full Precision (fp32) | [x] | [ ] | [ ] |
 | Quantization Aware Training (QAT) | [x] | [ ] | [ ] |
-| Post Training Quantization (PTQ) | [ ] | [ ] | [ ] |
+| Post Training Quantization (PTQ) | [x] | [ ] | [ ] |
 | Activation-aware Weight Quantization (AWQ) | [ ] | [ ] | [ ] |
 
 

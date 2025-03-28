@@ -5,7 +5,7 @@ import torch
 import argparse
 from src.utils import *
 from src.data_loader import get_data_loaders
-from src.models.cnn_model import M5, QATM5
+from src.models.cnn_model import M5, QATM5, PTQM5
 from src.train import number_of_correct, get_likely_index
 
 def evaluate_model(model, test_loader, device, checkpoint_path, logger):
@@ -105,6 +105,23 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(args.checkpoint, map_location='cpu'))
         model.to(device) # cpu
 
+    elif model_type == "cnn_ptq":
+        model = PTQM5(
+            n_input=model_params["n_input"],
+            n_output=model_params["n_output"],
+            stride=model_params["stride"],
+            n_channel=model_params["n_channel"],
+            conv_kernel_sizes=model_params["conv_kernel_sizes"]
+        ).to('cpu')
+        model.eval()
+        model.fuse_model()
+        model.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+        torch.ao.quantization.prepare(model, inplace=True)
+        model = torch.ao.quantization.convert(model, inplace=False)
+
+        model.load_state_dict(torch.load(args.checkpoint))
+        model.to('cpu')
+
     elif model_type == "cnn_fp32":
         model = M5(
             n_input=model_params["n_input"],
@@ -122,7 +139,7 @@ if __name__ == "__main__":
     model.eval()
 
     # Load test data
-    train_loader, test_loader = get_data_loaders(config["data"])
+    train_loader, test_loader, _ = get_data_loaders(config["data"])
 
     # Evaluate and log results
     logger.info(f"Evaluating model: {args.checkpoint}")

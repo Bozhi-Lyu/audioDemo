@@ -1,7 +1,7 @@
 import yaml
 from src.utils import *
 from src.data_loader import get_data_loaders
-from src.models.cnn_model import M5, QATM5
+from src.models.cnn_model import M5, QATM5, PTQM5
 from src.train import train_model
 import argparse
 
@@ -14,7 +14,7 @@ def main(args):
         config = yaml.safe_load(f)
     
     # Get data
-    train_loader, test_loader = get_data_loaders(config["data"])
+    train_loader, test_loader, validate_loader = get_data_loaders(config["data"])
     
     # Initialize model
     model_config = config["model"]["base_cnn"]
@@ -29,6 +29,8 @@ def main(args):
         model.eval()
         model.fuse_model()
         model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
+
+        # TODO: Add seperate qat process.
 
         # DEBUG
         # # Retrieve the QConfig
@@ -55,13 +57,49 @@ def main(args):
                    stride=model_config["stride"],
                    n_channel=model_config["n_channel"],
                    conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
+        
+        # fp32 model Train
+        logger.info("Training fp32 model...")
+        logger.info(f"Model parameters: {count_parameters(model)}")
+        logger.info(f"Model type: {config['model_type']}")
+        logger.info(f"Device: {device}")
+        train_model(model, train_loader, test_loader, config["train"], device)
     
-    # Train
-    logger.info("Training model...")
-    logger.info(f"Model parameters: {count_parameters(model)}")
-    logger.info(f"Model type: {config['model_type']}")
-    logger.info(f"Device: {device}")
-    train_model(model, train_loader, test_loader, config["train"], device)
+    elif config["model_type"] == "cnn_ptq":
+        # Load FP32 model
+        model_fp32 = PTQM5(n_input=model_config["n_input"],
+                   n_output=model_config["n_output"],
+                   stride=model_config["stride"],
+                   n_channel=model_config["n_channel"],
+                   conv_kernel_sizes=model_config["conv_kernel_sizes"]).to('cpu')
+        model_fp32.eval()
+        assert "pretrained_path" in model_config, "Pretrained model must be provided for PTQ."
+        model_fp32.load_state_dict(torch.load(model_config["pretrained_path"]))
+        model_fp32.fuse_model()
+        model_fp32.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+        torch.ao.quantization.prepare(model_fp32, inplace=True)
+        
+        # Calibrate model - use validation set
+        with torch.inference_mode():
+            for data, _ in validate_loader:
+                data = data.to("cpu")
+                model_fp32(data)
+        
+        # # DEBUG
+        # logger.info("Post Training Quantizing model...")
+        # logger.info(f"fp32 model: {model_fp32}")
+
+        # Convert to PTQ model
+        model = torch.ao.quantization.convert(model_fp32, inplace=False)
+
+        # # DEBUG
+        # logger.info(f"PTQ model: {model}")
+
+        
+    elif config["model_type"] == "wav2vec2_fp16":
+        pass
+        # model = # TODO: Load model and use data loader from data_loader.py
+
     
     # Save models
     if config["model_type"] == "cnn_qat":

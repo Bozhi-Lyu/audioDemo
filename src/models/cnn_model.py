@@ -110,3 +110,46 @@ class QATM5(M5):
         fuse_modules(self, [['conv3', 'bn3', 'relu3']], inplace=True)
         fuse_modules(self, [['conv4', 'bn4', 'relu4']], inplace=True)
 
+class PTQM5(M5):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.quant = torch.quantization.QuantStub()
+        self.dequant = torch.quantization.DeQuantStub()
+
+    def forward(self, x):
+        x = self.quant(x)
+        
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        x = self.pool1(x)
+        
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+        x = self.pool2(x)
+        
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu3(x)
+        x = self.pool3(x)
+        
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = self.relu4(x)
+        x = self.pool4(x)
+        
+        x = F.avg_pool1d(x, x.shape[-1])
+        x = x.permute(0, 2, 1)
+        x = self.fc1(x)
+
+        x = self.dequant(x)
+        return F.log_softmax(x, dim=2)
+
+    def fuse_model(self):
+        # Fuse Conv+BN+ReLU modules
+        self.eval()
+        torch.quantization.fuse_modules(self, [['conv1', 'bn1', 'relu1']], inplace=True)
+        torch.quantization.fuse_modules(self, [['conv2', 'bn2', 'relu2']], inplace=True)
+        torch.quantization.fuse_modules(self, [['conv3', 'bn3', 'relu3']], inplace=True)
+        torch.quantization.fuse_modules(self, [['conv4', 'bn4', 'relu4']], inplace=True)

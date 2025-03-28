@@ -75,8 +75,17 @@ def get_data_loaders(config):
         num_workers=num_workers,
         pin_memory=pin_memory
     )
+
+    validate_loader = DataLoader(
+        SubsetSC("validation"),
+        batch_size=config["batch_size"],
+        shuffle=False,
+        collate_fn=collate_fn,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
     
-    return train_loader, test_loader
+    return train_loader, test_loader, validate_loader
 
 def pad_sequence(batch):
     # Make all tensor in a batch the same length by padding with zeros
