@@ -55,9 +55,9 @@ def train_epoch(model, train_loader, optimizer, epoch, config, device, pbar):
         pbar.update(1)
         epoch_losses.append(loss.item())
         
-        # Logging uses module-level logger
-        if batch_idx % config["log_interval"] == 0:
-            logger.info(f"Train Epoch: {epoch} [...]")
+        # # Logging uses module-level logger
+        # if batch_idx % config["log_interval"] == 0:
+        #     logger.info(f"Train Epoch: {epoch} [...]")
             
     return epoch_losses
 
@@ -65,17 +65,26 @@ def train_epoch(model, train_loader, optimizer, epoch, config, device, pbar):
 def test_model(model, test_loader, epoch, device, pbar):
     model.eval()
     correct = 0
-    for data, target in test_loader:
+    total = 0
+    with torch.no_grad():
+        for data, target in test_loader:
 
-        data = data.to(device)
-        target = target.to(device)
-        output = model(data)
+            data = data.to(device)
+            target = target.to(device)
+            output = model(data)
 
-        pred = get_likely_index(output)
-        correct += number_of_correct(pred, target)
+            pred = get_likely_index(output)
+            correct += number_of_correct(pred, target)
+            total += target.size(0)
 
-        # update progress bar
-        pbar.update(1)
+            # update progress bar
+            pbar.update(1)
+    
+    accuracy = 100. * correct / total if total > 0 else 0
+
+    pbar.set_description(f"Epoch {epoch} [Test Accuracy: {accuracy:.2f}%]")
+
+    logger.info(f"Test Epoch: {epoch} Accuracy: {accuracy:.2f}% ({correct}/{total})")
 
 def number_of_correct(pred, target):
     # count number of correct predictions

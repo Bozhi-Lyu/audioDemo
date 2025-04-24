@@ -18,38 +18,61 @@ def main(args):
     
     # Initialize model
     model_config = config["model"]["base_cnn"]
-    if config["model_type"] == "cnn_qat":
+
+    # if config["model_type"] == "cnn_qat":
+    #     model = QATM5(n_input=model_config["n_input"],
+    #                   n_output=model_config["n_output"],
+    #                   stride=model_config["stride"],
+    #                   n_channel=model_config["n_channel"],
+    #                   conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
+        
+    #     # DEBUG
+    #     model.eval()
+    #     model.fuse_model()
+    #     model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
+
+    #     # TODO: Add separate qat process.
+    #     model.train()
+    #     torch.ao.quantization.prepare_qat(model, inplace=True)
+
+    if config["model_type"] == "cnn_qat":   # QAT from a fp checkpoint.
+
+        assert "pretrained_path" in model_config, "Pretrained model must be provided for QAT from a fp checkpoint."
+        fp32_checkpoint = torch.load(model_config["pretrained_path"])
+        
+        # print("Checkpoint dict keys:", fp32_checkpoint.keys())
+        # odict_keys([
+        # 'conv1.weight', 'conv1.bias', 
+        # 'bn1.weight', 'bn1.bias', 'bn1.running_mean', 'bn1.running_var', 'bn1.num_batches_tracked', 
+        # 'conv2.weight', 'conv2.bias', 
+        # 'bn2.weight', 'bn2.bias', 'bn2.running_mean', 'bn2.running_var', 'bn2.num_batches_tracked', 
+        # 'conv3.weight', 'conv3.bias', 
+        # 'bn3.weight', 'bn3.bias', 'bn3.running_mean', 'bn3.running_var', 'bn3.num_batches_tracked', 
+        # 'conv4.weight', 'conv4.bias', 
+        # 'bn4.weight', 'bn4.bias', 'bn4.running_mean', 'bn4.running_var', 'bn4.num_batches_tracked', 
+        # 'fc1.weight', 'fc1.bias'])
+
         model = QATM5(n_input=model_config["n_input"],
                       n_output=model_config["n_output"],
                       stride=model_config["stride"],
                       n_channel=model_config["n_channel"],
                       conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
         
-        # DEBUG
-        model.eval()
+        missing_keys, unexpected_keys = model.load_state_dict(fp32_checkpoint, strict=False)
+        # print("Missing:", missing_keys)
+        # print("Unexpected:", unexpected_keys)
+
+        with torch.no_grad():
+            model.fc1.weight.copy_(fp32_checkpoint["fc1.weight"])
+            model.fc1.bias.copy_(fp32_checkpoint["fc1.bias"])
+
+        # model.eval() #?
         model.fuse_model()
         model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
 
-        # TODO: Add seperate qat process.
-
-        # DEBUG
-        # # Retrieve the QConfig
-        # qconfig = model.qconfig
-
-        # # # Instantiate the observers
-        # activation_observer = qconfig.activation()
-        # weight_observer = qconfig.weight()
-
-        # # Print the quantization schemes
-        # logger.info("Activation Observer qscheme:", activation_observer.qscheme) #  (torch.per_tensor_affine,)
-        # logger.info("Weight Observer qscheme:", weight_observer.qscheme) #  (torch.per_channel_symmetric,)
-
-        # # Check quantization ranges
-        # logger.info("\nActivation Observer quant_min/max:", activation_observer.quant_min, activation_observer.quant_max) #  (0, 127)
-        # logger.info("Weight Observer quant_min/max:", weight_observer.quant_min, weight_observer.quant_max) # (-128, 127)
-        
         model.train()
         torch.ao.quantization.prepare_qat(model, inplace=True)
+        train_model(model, train_loader, test_loader, config["train"], device)
 
     elif config["model_type"] == "cnn_fp32":
         model = M5(n_input=model_config["n_input"],
