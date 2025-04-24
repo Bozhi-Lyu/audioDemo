@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 class SubsetSC(SPEECHCOMMANDS):
     def __init__(self, subset: str = None, root: str = "./data/raw"):
-        super().__init__(root, download=True)
+        super().__init__(root = root, download=True)
         def load_list(filename):
             filepath = os.path.join(self._path, filename)
             with open(filepath) as fileobj:
@@ -23,7 +23,8 @@ class SubsetSC(SPEECHCOMMANDS):
 
 def get_data_loaders(config):
 
-    temp_set = SubsetSC("testing")
+    root = config["raw_dir"]
+    temp_set = SubsetSC("testing", root=root)
     _, original_sample_rate, label, _, _ = temp_set[0]
     new_sample_rate = config["sample_rate"] 
     labels = sorted(list(set(d[2] for d in temp_set)))
@@ -59,7 +60,7 @@ def get_data_loaders(config):
         pin_memory = False
 
     train_loader = DataLoader(
-        SubsetSC("training"),
+        SubsetSC("training", root=root),
         batch_size=config["batch_size"],
         shuffle=True,
         collate_fn=collate_fn,
@@ -68,7 +69,7 @@ def get_data_loaders(config):
     )
     
     test_loader = DataLoader(
-        SubsetSC("testing"),
+        SubsetSC("testing", root=root),
         batch_size=config["batch_size"],
         shuffle=False,
         collate_fn=collate_fn,
@@ -77,7 +78,7 @@ def get_data_loaders(config):
     )
 
     validate_loader = DataLoader(
-        SubsetSC("validation"),
+        SubsetSC("validation", root=root),
         batch_size=config["batch_size"],
         shuffle=False,
         collate_fn=collate_fn,

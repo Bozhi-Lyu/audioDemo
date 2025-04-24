@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-import yaml
 from torch.ao.quantization import QuantStub, DeQuantStub, fuse_modules
 from torch.ao.quantization import get_default_qat_qconfig
 

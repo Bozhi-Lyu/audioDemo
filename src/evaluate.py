@@ -49,7 +49,7 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger):
     accuracy = test(model, test_loader)
     logger.info(f"Accuracy: {accuracy:.2f}%")
 
-@profile
+# @profile
 def test(model, test_loader):
     model.eval()
     correct = 0
@@ -81,7 +81,6 @@ if __name__ == "__main__":
 
     # Initialize model
     if model_type == "cnn_qat":
-        print("QAT Model")
         model = QATM5(
             n_input=model_params["n_input"],
             n_output=model_params["n_output"],
@@ -143,4 +142,5 @@ if __name__ == "__main__":
 
     # Evaluate and log results
     logger.info(f"Evaluating model: {args.checkpoint}")
+    evaluate_model(model, train_loader, device, args.checkpoint, logger)
     evaluate_model(model, test_loader, device, args.checkpoint, logger)

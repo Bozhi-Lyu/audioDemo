@@ -9,4 +9,6 @@ notebook/PTQdemo.ipynb
 notebook/QATdemo.ipynbdeprecated/
 logs/profiling_logs/*.lprof
 __pycache__/
+build/
+src.egg-info/
 TODO.md
