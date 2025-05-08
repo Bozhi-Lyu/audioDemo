@@ -6,6 +6,7 @@ import argparse
 from src.utils import *
 from src.data_loader import get_data_loaders
 from src.models.cnn_model import M5, QATM5, PTQM5
+from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant
 from src.train import number_of_correct, get_likely_index
 
 def evaluate_model(model, test_loader, device, checkpoint_path, logger):
@@ -50,12 +51,12 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger):
     logger.info(f"Accuracy: {accuracy:.2f}%")
 
 # @profile
-def test(model, test_loader):
+def test(model, test_loader, device = 'cpu'):
     model.eval()
     correct = 0
     with torch.no_grad():
         for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
+            # data, target = data.to(device), target.to(device)
             output = model(data)
             pred = get_likely_index(output)
             correct += number_of_correct(pred, target)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         model.to(device) # cpu
 
     elif model_type == "cnn_ptq":
-        model = PTQM5(
+        model = PTQM5Modular(
             n_input=model_params["n_input"],
             n_output=model_params["n_output"],
             stride=model_params["stride"],
@@ -122,7 +123,7 @@ if __name__ == "__main__":
         model.to('cpu')
 
     elif model_type == "cnn_fp32":
-        model = M5(
+        model = M5Modular(
             n_input=model_params["n_input"],
             n_output=model_params["n_output"],
             stride=model_params["stride"],

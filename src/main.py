@@ -2,7 +2,8 @@ import yaml
 from src.utils import *
 from src.data_loader import get_data_loaders
 from src.models.cnn_model import M5, QATM5, PTQM5
-from src.train import train_model
+from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant
+from src.train import set_seed, train_model
 import argparse
 
 def main(args):
@@ -15,25 +16,11 @@ def main(args):
     
     # Get data
     train_loader, test_loader, validate_loader = get_data_loaders(config["data"])
+    logger.info(f"Dataloader prepared.")
     
     # Initialize model
     model_config = config["model"]["base_cnn"]
 
-    # if config["model_type"] == "cnn_qat":
-    #     model = QATM5(n_input=model_config["n_input"],
-    #                   n_output=model_config["n_output"],
-    #                   stride=model_config["stride"],
-    #                   n_channel=model_config["n_channel"],
-    #                   conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
-        
-    #     # DEBUG
-    #     model.eval()
-    #     model.fuse_model()
-    #     model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
-
-    #     # TODO: Add separate qat process.
-    #     model.train()
-    #     torch.ao.quantization.prepare_qat(model, inplace=True)
 
     if config["model_type"] == "cnn_qat":   # QAT from a fp checkpoint.
 
@@ -74,12 +61,21 @@ def main(args):
         torch.ao.quantization.prepare_qat(model, inplace=True)
         train_model(model, train_loader, test_loader, config["train"], device)
 
+        # Quantize and Save model
+        model.to("cpu")
+        logger.info("Quantizing model...")
+        model.eval()
+        torch.ao.quantization.convert(model, inplace=True)
+        torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+
+
     elif config["model_type"] == "cnn_fp32":
-        model = M5(n_input=model_config["n_input"],
-                   n_output=model_config["n_output"],
-                   stride=model_config["stride"],
-                   n_channel=model_config["n_channel"],
-                   conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
+        model = M5Modular(
+            n_input=model_config["n_input"],
+            n_output=model_config["n_output"],
+            stride=model_config["stride"],
+            n_channel=model_config["n_channel"],
+            conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
         
         # fp32 model Train
         logger.info("Training fp32 model...")
@@ -87,10 +83,15 @@ def main(args):
         logger.info(f"Model type: {config['model_type']}")
         logger.info(f"Device: {device}")
         train_model(model, train_loader, test_loader, config["train"], device)
+
+        # Save model
+        torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+
     
     elif config["model_type"] == "cnn_ptq":
+        set_seed(config["model"]["base_cnn"]["seed"])
         # Load FP32 model
-        model_fp32 = PTQM5(n_input=model_config["n_input"],
+        model_fp32 = PTQM5Modular(n_input=model_config["n_input"],
                    n_output=model_config["n_output"],
                    stride=model_config["stride"],
                    n_channel=model_config["n_channel"],
@@ -118,29 +119,41 @@ def main(args):
         # # DEBUG
         # logger.info(f"PTQ model: {model}")
 
+        # Save model
+        torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+
         
-    elif config["model_type"] == "wav2vec2_fp16":
-        pass
-        # model = # TODO: Load model and use data loader from data_loader.py
+    elif config["model_type"] == "cnn_ptq_LayerWiseQuant":
+        # Initialize layer-wise quantized models and load FP32 checkpoint
+        for i in config["model"]["quantization"]:
+            model_fp32 = PTQM5_LayerWiseQuant(
+                quantized_block_idx = i,
+                n_input=model_config["n_input"],
+                n_output=model_config["n_output"],
+                stride=model_config["stride"],
+                n_channel=model_config["n_channel"],
+                conv_kernel_sizes=model_config["conv_kernel_sizes"], 
+                ).to('cpu')
+            model_fp32.eval()
+            assert "pretrained_path" in model_config, "Pretrained model must be provided for PTQ."
+            model_fp32.load_state_dict(torch.load(model_config["pretrained_path"]))
+            model_fp32.fuse_model()
+            model_fp32.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+            torch.ao.quantization.prepare(model_fp32, inplace=True)
+        
+            # Calibrate model - use validation set
+            logger.info(f"Quantizing Layer {i} ...")
+            with torch.inference_mode():
+                for data, _ in validate_loader:
+                    data = data.to("cpu")
+                    model_fp32(data)
 
-    
-    # Save models
-    if config["model_type"] == "cnn_qat":
-        model.to("cpu")
-        logger.info("Quantizing model...")
-        model.eval()
-        torch.ao.quantization.convert(model, inplace=True)
+            # Convert to PTQ model
+            model = torch.ao.quantization.convert(model_fp32, inplace=False)
 
-    # # DEBUG: Check if model is quantized
-    # for name, module in model.named_modules():
-    #     if isinstance(module, torch.ao.nn.quantized.Conv1d):
-    #         print(f"Quantized Conv1d: {name}")
-    #         print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
-    #     elif isinstance(module, torch.ao.nn.quantized.Linear):
-    #         print(f"Quantized Linear: {name}")
-    #         print(f"Weight dtype: {module.weight().dtype}")  # Should be torch.qint8
-         
-    torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+            # Save model
+            torch.save(model.state_dict(), f"./models/{config['model_type']}_q{i}_model.pth")
+
 
 if __name__ == "__main__":
 

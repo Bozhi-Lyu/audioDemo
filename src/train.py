@@ -4,11 +4,26 @@ import torch.optim as optim
 from tqdm import tqdm
 import logging
 import sys
+import numpy as np
+import random
+import os
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # multi-GPU
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 def train_model(model, train_loader, test_loader, config, device):
+    set_seed(config["seed"])
     optimizer = optim.Adam(model.parameters(), 
                          lr=config["lr"], 
                          weight_decay=config["weight_decay"])

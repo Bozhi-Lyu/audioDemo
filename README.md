@@ -45,7 +45,7 @@
 - [x] Model Size
 - [x] Accuracy Drop
 - [x] Inference Time (Latency)
-- [ ] Memory Footprint
+- ~~[ ] Memory Footprint~~
 
 ## Experiment Steps
 
