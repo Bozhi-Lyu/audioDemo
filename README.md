@@ -89,14 +89,11 @@
 
 See [report](/notebook/visualization.ipynb).
 
-## Some best practices for Quantization
-
-Got some best practices which could be applied/tested.
+## Some practices/tips for Quantization
 
 - > Quantizing a model from a floating point checkpoint provides better accuracy. 
 (https://arxiv.org/abs/1806.08342) 
 
     - Insert QAT after finishing FP model training? 
-        #TODO: Compare: QAT from scratch VS QAT from fp checkpoint VS PTQ from same checkpoint
 
 - 

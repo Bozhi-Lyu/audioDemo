@@ -152,3 +152,14 @@ class PTQM5_LayerWiseQuant(PTQM5Modular):
     #     for i in range(1, 5):
     #         if self.quantized_block_idx != i:
     #             torch.quantization.fuse_modules(getattr(self, f'block{i}').block, ['0', '1', '2'], inplace=True)
+
+    def set_qconfig_for_layerwise(self, qconfig):
+        for i in range(1, 5):
+            block = getattr(self, f'block{i}')
+            if i == self.quantized_block_idx:
+                block.qconfig = qconfig
+            else:
+                block.qconfig = None
+        self.fc1.qconfig = None  # Might change later.
+        self.quant.qconfig = qconfig
+        self.dequant.qconfig = qconfig

@@ -138,7 +138,9 @@ def main(args):
             assert "pretrained_path" in model_config, "Pretrained model must be provided for PTQ."
             model_fp32.load_state_dict(torch.load(model_config["pretrained_path"]))
             model_fp32.fuse_model()
-            model_fp32.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+            # Set qconfig only on the target block and stubs
+            qconfig = torch.ao.quantization.get_default_qconfig('x86')
+            model_fp32.set_qconfig_for_layerwise(qconfig)
             torch.ao.quantization.prepare(model_fp32, inplace=True)
         
             # Calibrate model - use validation set
