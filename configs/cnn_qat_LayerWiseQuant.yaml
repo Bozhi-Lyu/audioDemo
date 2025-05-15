@@ -1,12 +1,11 @@
-
 data:
-  raw_dir: "./data/raw" 
-  processed_dir: "./data/processed"
+  raw_dir: "./data/raw"
+  processed_dir: "./data/processed" 
   sample_rate: 8000
   batch_size: 256
   version: "v0.1"
 
-model_type: "cnn_qat"
+model_type: "cnn_qat_LayerWiseQuant"
 
 model:
   base_cnn:
@@ -17,6 +16,7 @@ model:
     conv_kernel_sizes: [80, 3, 3, 3]
     pretrained_path: "./models/cnn_fp32_model.pth"
     version: "demo"
+  quantization: [1, 2, 3, 4]
 
 train:
   lr: 0.0001

@@ -2,7 +2,7 @@ import yaml
 from src.utils import *
 from src.data_loader import get_data_loaders
 from src.models.cnn_model import M5, QATM5, PTQM5
-from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant
+from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant, QATM5Modular, QATM5_LayerWiseQuant
 from src.train import set_seed, train_model
 import argparse
 
@@ -27,27 +27,15 @@ def main(args):
         assert "pretrained_path" in model_config, "Pretrained model must be provided for QAT from a fp checkpoint."
         fp32_checkpoint = torch.load(model_config["pretrained_path"])
         
-        # print("Checkpoint dict keys:", fp32_checkpoint.keys())
-        # odict_keys([
-        # 'conv1.weight', 'conv1.bias', 
-        # 'bn1.weight', 'bn1.bias', 'bn1.running_mean', 'bn1.running_var', 'bn1.num_batches_tracked', 
-        # 'conv2.weight', 'conv2.bias', 
-        # 'bn2.weight', 'bn2.bias', 'bn2.running_mean', 'bn2.running_var', 'bn2.num_batches_tracked', 
-        # 'conv3.weight', 'conv3.bias', 
-        # 'bn3.weight', 'bn3.bias', 'bn3.running_mean', 'bn3.running_var', 'bn3.num_batches_tracked', 
-        # 'conv4.weight', 'conv4.bias', 
-        # 'bn4.weight', 'bn4.bias', 'bn4.running_mean', 'bn4.running_var', 'bn4.num_batches_tracked', 
-        # 'fc1.weight', 'fc1.bias'])
-
-        model = QATM5(n_input=model_config["n_input"],
+        model = QATM5Modular(n_input=model_config["n_input"],
                       n_output=model_config["n_output"],
                       stride=model_config["stride"],
                       n_channel=model_config["n_channel"],
                       conv_kernel_sizes=model_config["conv_kernel_sizes"]).to(device)
         
         missing_keys, unexpected_keys = model.load_state_dict(fp32_checkpoint, strict=False)
-        # print("Missing:", missing_keys)
-        # print("Unexpected:", unexpected_keys)
+        print("Missing:", missing_keys) if len(missing_keys) > 0 else None
+        print("Unexpected:", unexpected_keys) if len(unexpected_keys) > 0 else None
 
         with torch.no_grad():
             model.fc1.weight.copy_(fp32_checkpoint["fc1.weight"])
@@ -154,6 +142,39 @@ def main(args):
             model = torch.ao.quantization.convert(model_fp32, inplace=False)
 
             # Save model
+            torch.save(model.state_dict(), f"./models/{config['model_type']}_q{i}_model.pth")
+
+
+    elif config["model_type"] == "cnn_qat_LayerWiseQuant":
+        # Initialize layer-wise quantized models and load ptq layerWise checkpoint
+        for i in config["model"]["quantization"]:
+            model = QATM5_LayerWiseQuant(
+                quantized_block_idx = i,
+                n_input=model_config["n_input"],
+                n_output=model_config["n_output"],
+                stride=model_config["stride"],
+                n_channel=model_config["n_channel"],
+                conv_kernel_sizes=model_config["conv_kernel_sizes"], 
+                ).to('cpu')
+            
+            model.eval()
+            model.load_state_dict(torch.load(model_config["pretrained_path"]))
+            model.fuse_model()
+
+            # Set qconfig only on the target block and stubs
+            qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
+            model.set_qconfig_for_layerwise(qconfig)
+            
+            # Quantize & Save the model
+            model.train()
+            logger.info(f"Quantizing Layer {i} ...")
+            torch.ao.quantization.prepare_qat(model, inplace=True)
+            print(device)
+            train_model(model, train_loader, test_loader, config["train"], "cpu")
+            
+            model.to("cpu")
+            model.eval()
+            torch.ao.quantization.convert(model, inplace=True)
             torch.save(model.state_dict(), f"./models/{config['model_type']}_q{i}_model.pth")
 
 
