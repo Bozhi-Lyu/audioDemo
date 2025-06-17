@@ -83,7 +83,8 @@ def get_data_loaders(config):
         shuffle=False,
         collate_fn=collate_fn,
         num_workers=num_workers,
-        pin_memory=pin_memory
+        pin_memory=pin_memory,
+        drop_last=True
     )
     
     return train_loader, test_loader, validate_loader

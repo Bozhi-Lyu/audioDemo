@@ -45,9 +45,10 @@ class M5Modular(nn.Module):
         x = self.block3(x)
         x = self.block4(x)
 
-        x = F.avg_pool1d(x, x.shape[-1])
-        x = x.permute(0, 2, 1)
-        x = self.fc1(x)
+        # x = F.avg_pool1d(x, x.shape[-1])
+        x = F.adaptive_avg_pool1d(x, 1) # shape: [B, C, 1]
+        x = x.permute(0, 2, 1) # shape: [B, 1, C]
+        x = self.fc1(x) # [B, 1, num_classes]
         return F.log_softmax(x, dim=2)
 
 class QATM5_LayerWiseQuant(M5Modular):
@@ -101,7 +102,7 @@ class QATM5Modular(M5Modular):
         x = self.block2(x)
         x = self.block3(x)
         x = self.block4(x)
-        x = F.avg_pool1d(x, x.shape[-1])
+        x = F.adaptive_avg_pool1d(x, 1)
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
         x = self.dequant(x)
@@ -126,7 +127,7 @@ class PTQM5Modular(M5Modular):
         x = self.block2(x)
         x = self.block3(x)
         x = self.block4(x)
-        x = F.avg_pool1d(x, x.shape[-1])
+        x = F.adaptive_avg_pool1d(x, 1)
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
         x = self.dequant(x)

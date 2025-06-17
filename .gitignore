@@ -12,4 +12,4 @@ __pycache__/
 build/
 src.egg-info/
 TODO.md
-.onnx
+models/*.onnx
