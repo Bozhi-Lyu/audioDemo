@@ -31,6 +31,11 @@ def main(args):
         try:
             model.load_state_dict(torch.load(args.checkpoint))
             model.eval()
+                    
+            dynamic_axes_0 = { 
+            'input' : {0: 'batchsize'}, 
+            'output' : {0: 'batchsize'}
+            }
 
             torch.onnx.export(
                 model, 
@@ -38,7 +43,8 @@ def main(args):
                 args.output,
                 opset_version=13,
                 input_names=['input'], 
-                output_names=['output']
+                output_names=['output'],
+                dynamic_axes=dynamic_axes_0
             )
             logger.info("ONNX export successful.")
         except Exception as e:

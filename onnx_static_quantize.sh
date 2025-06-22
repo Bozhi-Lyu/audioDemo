@@ -21,3 +21,9 @@ python src/onnx_static_quantize.py \
     --input models/cnn_fp32_infer.onnx \
     --output models/cnn_int8.onnx \
     --per_channel True\
+
+# 4. Evaluate the quantized model
+python src/onnxRT_inference.py \
+    --model models/cnn_fp32.onnx
+python src/onnxRT_inference.py \
+    --model models/cnn_int8.onnx
