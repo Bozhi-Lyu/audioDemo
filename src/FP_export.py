@@ -5,19 +5,14 @@ from src.models.cnn_model_LayerWiseQuant import M5Modular
 import argparse
 
 import torch
+import numpy as np
+import onnxruntime as ort
 
-def main(args):
-
+def export_model(model_config, checkpoint, output, test_loader):
     logger = setup_logging()
-    device = "cpu"
 
-    with open(args.config) as f:
-        config = yaml.safe_load(f)
-    
-    train_loader, _, _ = get_data_loaders(config["data"])
-    dummy_input = next(iter(train_loader))[0].to(device)
-    
-    model_config = config["model"]["base_cnn"]  
+    input_tensor = next(iter(test_loader))[0].to("cpu")
+    dynamic_axes_0 = {"input": {0: "batchsize"}, "output": {0: "batchsize"}}
 
     if config["model_type"] == "cnn_fp32":
         model = M5Modular(
@@ -27,28 +22,55 @@ def main(args):
             n_channel=model_config["n_channel"],
             conv_kernel_sizes=model_config["conv_kernel_sizes"]
         ).to("cpu")
-        
+
         try:
-            model.load_state_dict(torch.load(args.checkpoint))
+            model.load_state_dict(torch.load(checkpoint))
             model.eval()
-                    
-            dynamic_axes_0 = { 
-            'input' : {0: 'batchsize'}, 
-            'output' : {0: 'batchsize'}
-            }
 
             torch.onnx.export(
-                model, 
-                dummy_input, 
-                args.output,
+                model,
+                input_tensor,
+                output,
                 opset_version=13,
-                input_names=['input'], 
-                output_names=['output'],
-                dynamic_axes=dynamic_axes_0
+                input_names=["input"],
+                output_names=["output"],
+                dynamic_axes=dynamic_axes_0,
             )
             logger.info("ONNX export successful.")
         except Exception as e:
             logger.error(f"Error exporting model to ONNX: {e}")
+
+        compare_model_outputs(model, output, test_loader, tolerance=(1e-3, 1e-5))
+
+def compare_model_outputs(torch_model, onnx_model, data_loader, tolerance=(1e-3, 1e-5)):
+    logger = setup_logging()
+    logger.info("Precision Alignment: comparing outputs between PyTorch and ONNX...")
+    torch_model.eval()
+    ort_session = ort.InferenceSession(onnx_model)
+    input_name = ort_session.get_inputs()[0].name
+    output_name = ort_session.get_outputs()[0].name
+    num_batches = 0
+    all_close = True
+
+    for x, y in data_loader:
+        with torch.no_grad():
+            torch_output = torch_model(x).cpu().numpy()
+
+        ort_output = ort_session.run([output_name], {input_name: x.cpu().numpy()})[0]
+
+        try:
+            np.testing.assert_allclose(
+                torch_output, ort_output, rtol=tolerance[0], atol=tolerance[1]
+            )
+        except AssertionError as e:
+            logger.error(f"Batch {num_batches} failed precision check: {e}")
+            all_close = False
+        num_batches += 1
+
+    if all_close:
+        logger.info(f"All batches passed precision checks within tolerance {tolerance}.")
+    else:
+        logger.error("Some batches failed precision checks.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export model to ONNX format.")
@@ -57,4 +79,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=str)
     args = parser.parse_args()
 
-    main(args)
+    with open(args.config) as f:
+        config = yaml.safe_load(f)
+
+    train_loader, test_loader, _ = get_data_loaders(config["data"])
+    export_model(config["model"]["base_cnn"], args.checkpoint, args.output, test_loader)

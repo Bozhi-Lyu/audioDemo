@@ -37,9 +37,9 @@ def main(args):
         print("Missing:", missing_keys) if len(missing_keys) > 0 else None
         print("Unexpected:", unexpected_keys) if len(unexpected_keys) > 0 else None
 
-        with torch.no_grad():
-            model.fc1.weight.copy_(fp32_checkpoint["fc1.weight"])
-            model.fc1.bias.copy_(fp32_checkpoint["fc1.bias"])
+        # with torch.no_grad():
+        #     model.fc1.weight.copy_(fp32_checkpoint["fc1.weight"])
+        #     model.fc1.bias.copy_(fp32_checkpoint["fc1.bias"])
 
         # model.eval() #?
         model.fuse_model()
@@ -48,6 +48,11 @@ def main(args):
         model.train()
         torch.ao.quantization.prepare_qat(model, inplace=True)
         train_model(model, train_loader, test_loader, config["train"], device)
+
+        # Save checkpoint AFTER QAT training
+        logger.info("Saving QAT finetuned model for onnx exporting...")
+        logger.info(f"Model keys: {model.state_dict().keys()}")
+        torch.save(model.state_dict(), "./models/qat_for_onnx.pth")
 
         # Quantize and Save model
         model.to("cpu")
