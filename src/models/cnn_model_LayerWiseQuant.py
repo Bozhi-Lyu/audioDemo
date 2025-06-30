@@ -103,11 +103,19 @@ class QATM5Modular(M5Modular):
         x = self.block3(x)
         x = self.block4(x)
         x = F.adaptive_avg_pool1d(x, 1)
-        x = x.permute(0, 2, 1)
+        # x = x.permute(0, 2, 1)
+        x = x.transpose(1, 2)
         x = self.fc1(x)
         x = self.dequant(x)
 
         return F.log_softmax(x, dim=2)
+    
+        # NB:
+        # The permute() operation is not supported in the quantized version of PyTorch.
+        # https://github.com/pytorch/pytorch/issues/109425
+        # `aten.permute` implemented in Aten: https://docs.pytorch.org/docs/main/torch.compiler_ir.html
+        # But lack of a `@symbolic_helper.quantized_args(True)` in symbolic_opset:
+        # https://github.com/pytorch/pytorch/blob/ffaed8c569406839335bf46dafc4c3e8871e4b8a/torch/onnx/symbolic_opset9.py#L989
 
     def fuse_model(self):
         # Fuse Conv+BN+ReLU modules
