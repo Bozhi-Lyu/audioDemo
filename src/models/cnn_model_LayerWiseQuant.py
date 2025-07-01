@@ -126,8 +126,8 @@ class QATM5Modular(M5Modular):
 class PTQM5Modular(M5Modular):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.quant = torch.quantization.QuantStub()
-        self.dequant = torch.quantization.DeQuantStub()
+        self.quant = QuantStub()
+        self.dequant = DeQuantStub()
 
     def forward(self, x):
         x = self.quant(x)
@@ -136,7 +136,8 @@ class PTQM5Modular(M5Modular):
         x = self.block3(x)
         x = self.block4(x)
         x = F.adaptive_avg_pool1d(x, 1)
-        x = x.permute(0, 2, 1)
+        # x = x.permute(0, 2, 1)
+        x = x.transpose(1, 2)
         x = self.fc1(x)
         x = self.dequant(x)
 

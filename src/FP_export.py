@@ -40,9 +40,9 @@ def export_model(model_config, checkpoint, output, test_loader):
         except Exception as e:
             logger.error(f"Error exporting model to ONNX: {e}")
 
-        compare_model_outputs(model, output, test_loader, tolerance=(1e-3, 1e-5))
+        compare_model_outputs(model, output, test_loader, tolerance=(1e-3, 1e-5), precision_check=True)
 
-def compare_model_outputs(torch_model, onnx_model, data_loader, tolerance=(1e-3, 1e-5)):
+def compare_model_outputs(torch_model, onnx_model, data_loader, tolerance=(1e-3, 1e-5), precision_check=False):
     logger = setup_logging()
     logger.info("Precision Alignment: comparing outputs between PyTorch and ONNX...")
     torch_model.eval()
@@ -52,25 +52,38 @@ def compare_model_outputs(torch_model, onnx_model, data_loader, tolerance=(1e-3,
     num_batches = 0
     all_close = True
 
-    for x, y in data_loader:
+    for x, _ in data_loader:
         with torch.no_grad():
             torch_output = torch_model(x).cpu().numpy()
 
         ort_output = ort_session.run([output_name], {input_name: x.cpu().numpy()})[0]
 
-        try:
-            np.testing.assert_allclose(
-                torch_output, ort_output, rtol=tolerance[0], atol=tolerance[1]
-            )
-        except AssertionError as e:
-            logger.error(f"Batch {num_batches} failed precision check: {e}")
-            all_close = False
+        # Check top-1 predictions match
+        torch_preds = torch_output.argmax(axis=2).squeeze(1)
+        onnx_preds = ort_output.argmax(axis=2).squeeze(1)
+
+        num_correct = (torch_preds == onnx_preds).sum().item()
+        num_total = len(torch_preds)
+        match_ratio = num_correct / num_total
+        logger.error(f"Batch {num_batches}: Match {num_correct} out of {num_total} ({match_ratio * 100:.2f}%)")
+        # assert match_ratio > 0.99, f"Predictions diverge too much: {match_ratio * 100:.2f}%"
+
+        if precision_check:
+            try:
+                np.testing.assert_allclose(
+                    ort_output, torch_output, rtol=tolerance[0], atol=tolerance[1]
+                )
+            except AssertionError as e:
+                logger.error(f"Batch {num_batches} failed precision check: {e}")
+                all_close = False
+        
         num_batches += 1
 
-    if all_close:
-        logger.info(f"All batches passed precision checks within tolerance {tolerance}.")
-    else:
-        logger.error("Some batches failed precision checks.")
+    if precision_check:
+        if all_close:
+            logger.info(f"All batches passed precision checks within tolerance {tolerance}.")
+        else:
+            logger.error("Some batches failed precision checks.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export model to ONNX format.")

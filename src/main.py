@@ -49,11 +49,6 @@ def main(args):
         torch.ao.quantization.prepare_qat(model, inplace=True)
         train_model(model, train_loader, test_loader, config["train"], device)
 
-        # # Save checkpoint AFTER QAT training
-        # logger.info("Saving QAT finetuned model for onnx exporting...")
-        # logger.info(f"Model keys: {model.state_dict().keys()}")
-        # torch.save(model.state_dict(), "./models/qat_for_onnx.pth")
-
         # Quantize and Save model
         model.to("cpu")
         logger.info("Quantizing model...")
