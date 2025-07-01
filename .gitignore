@@ -13,3 +13,4 @@ build/
 src.egg-info/
 TODO.md
 models/*.onnx
+*.png
