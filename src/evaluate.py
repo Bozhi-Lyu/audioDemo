@@ -6,7 +6,7 @@ import argparse
 from src.utils import *
 from src.data_loader import get_data_loaders
 from src.models.cnn_model import M5, QATM5, PTQM5
-from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant
+from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, QATM5Modular
 from src.train import number_of_correct, get_likely_index
 
 def evaluate_model(model, test_loader, device, checkpoint_path, logger):
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     # Initialize model
     if model_type == "cnn_qat":
-        model = QATM5(
+        model = QATM5Modular(
             n_input=model_params["n_input"],
             n_output=model_params["n_output"],
             stride=model_params["stride"],
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         model = torch.ao.quantization.convert(model, inplace=False)
 
         # Load checkpoint
-        model.load_state_dict(torch.load(args.checkpoint, map_location='cpu'))
+        model.load_state_dict(torch.load(args.checkpoint))
         model.to(device) # cpu
 
     elif model_type == "cnn_ptq":
