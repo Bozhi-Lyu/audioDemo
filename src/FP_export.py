@@ -65,7 +65,7 @@ def compare_model_outputs(torch_model, onnx_model, data_loader, tolerance=(1e-3,
         num_correct = (torch_preds == onnx_preds).sum().item()
         num_total = len(torch_preds)
         match_ratio = num_correct / num_total
-        logger.error(f"Batch {num_batches}: Match {num_correct} out of {num_total} ({match_ratio * 100:.2f}%)")
+        logger.info(f"Batch {num_batches}: Match {num_correct} out of {num_total} ({match_ratio * 100:.2f}%)")
         # assert match_ratio > 0.99, f"Predictions diverge too much: {match_ratio * 100:.2f}%"
 
         if precision_check:

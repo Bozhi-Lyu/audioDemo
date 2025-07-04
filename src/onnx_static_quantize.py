@@ -46,7 +46,7 @@ if __name__ == "__main__":
         model_input=args.input,
         model_output=args.output,
         calibration_data_reader=DataReader(validate_loader),
-        quant_format=QuantFormat.QDQ,
+        quant_format=QuantFormat.QDQ, # Or use QuantFormat.QOperator
         per_channel=args.per_channel,
     )
     logger.info("ONNX Runtime Static quantization successful.")
