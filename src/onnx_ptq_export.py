@@ -11,13 +11,14 @@ import torch
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export model to ONNX format.")
     parser.add_argument("--config", help="PTQ configs", required=True, type=str)
-    parser.add_argument("--checkpoint", help="Path to the FP32 checkpoint", required=True, type=str)
+    parser.add_argument("--checkpoint", help="Path to the FP32 checkpoint", required=False, type=str)
     parser.add_argument("--PretrainedPTQCheckpoint", help="Path to the PTQ checkpoint", required=False, type=str)
     parser.add_argument("--output", help="Path to the output ONNX file", required=True, type=str)
     args = parser.parse_args()
 
     logger = setup_logging()
     logger.info(f"Loaded config: {args.config}")
+    assert args.checkpoint or args.PretrainedPTQCheckpoint, "Either checkpoint or PretrainedPTQCheckpoint must be provided."
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
