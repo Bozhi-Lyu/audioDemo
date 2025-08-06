@@ -53,6 +53,18 @@ acc_train = test(model, train_loader)
 acc_test = test(model, test_loader)
 print(f"Default qconfig: Train Accuracy: {acc_train:.4f}, Test Accuracy: {acc_test:.4f}")
 
+def get_fresh_model():
+    model = PTQM5Modular(
+        n_input=model_config["n_input"],
+        n_output=model_config["n_output"],
+        stride=model_config["stride"],
+        n_channel=model_config["n_channel"],
+        conv_kernel_sizes=model_config["conv_kernel_sizes"]
+    )
+    model.eval()
+    model.load_state_dict(torch.load(model_config["pretrained_path"]))
+    model.fuse_model()
+    return model
 
 # Define observer configurations
 activation_observers = {
@@ -82,7 +94,7 @@ for act_name, act_observer in activation_observers.items():
         try:
             qconfig = QConfig(activation=act_observer, weight=wt_observer)
 
-            model_fp32 = copy.deepcopy(base_model_fp32)
+            model_fp32 = get_fresh_model()
             model_fp32.qconfig = qconfig
 
             prepare(model_fp32, inplace=True)

@@ -1,0 +1,98 @@
+{
+  "activation observer:MinMaxObserver, weight observer:MinMaxObserver_tensor_affine.": {
+    "train": 72.32063929846893,
+    "test": 70.54975011358474
+  },
+  "activation observer:MinMaxObserver, weight observer:MovingAverageMinMaxObserver_tensor_affine.": {
+    "train": 72.32063929846893,
+    "test": 70.54975011358474
+  },
+  "activation observer:MinMaxObserver, weight observer:HistogramObserver_tensor_affine.": {
+    "train": 72.16977240314463,
+    "test": 70.18627896410722
+  },
+  "activation observer:MinMaxObserver, weight observer:HistogramObserver_tensor_symmetric.": {
+    "train": 71.94347206015817,
+    "test": 70.10449795547478
+  },
+  "activation observer:MinMaxObserver, weight observer:PerChannelMinMaxObserver_symmetric.": {
+    "train": 72.01654821258089,
+    "test": 70.01363016810541
+  },
+  "activation observer:MinMaxObserver, weight observer:MovingAveragePerChannelMinMaxObserver_symmetric.": {
+    "train": 72.01654821258089,
+    "test": 70.01363016810541
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:MinMaxObserver_tensor_affine.": {
+    "train": 76.05813090060465,
+    "test": 73.2121762835075
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:MovingAverageMinMaxObserver_tensor_affine.": {
+    "train": 76.05813090060465,
+    "test": 73.2121762835075
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:HistogramObserver_tensor_affine.": {
+    "train": 75.96855368150584,
+    "test": 73.01226715129486
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:HistogramObserver_tensor_symmetric.": {
+    "train": 75.83890244333652,
+    "test": 73.27578373466606
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:PerChannelMinMaxObserver_symmetric.": {
+    "train": 75.9331942529142,
+    "test": 72.98500681508405
+  },
+  "activation observer:MovingAverageMinMaxObserver, weight observer:MovingAveragePerChannelMinMaxObserver_symmetric.": {
+    "train": 75.9331942529142,
+    "test": 72.98500681508405
+  },
+  "activation observer:HistogramObserver_affine, weight observer:MinMaxObserver_tensor_affine.": {
+    "train": 79.22987164527422,
+    "test": 75.79282144479782
+  },
+  "activation observer:HistogramObserver_affine, weight observer:MovingAverageMinMaxObserver_tensor_affine.": {
+    "train": 79.22987164527422,
+    "test": 75.79282144479782
+  },
+  "activation observer:HistogramObserver_affine, weight observer:HistogramObserver_tensor_affine.": {
+    "train": 79.15325954999234,
+    "test": 75.92912312585189
+  },
+  "activation observer:HistogramObserver_affine, weight observer:HistogramObserver_tensor_symmetric.": {
+    "train": 78.95406810225947,
+    "test": 75.93820990458882
+  },
+  "activation observer:HistogramObserver_affine, weight observer:PerChannelMinMaxObserver_symmetric.": {
+    "train": 79.18626168334453,
+    "test": 75.84734211721944
+  },
+  "activation observer:HistogramObserver_affine, weight observer:MovingAveragePerChannelMinMaxObserver_symmetric.": {
+    "train": 79.18626168334453,
+    "test": 75.84734211721944
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:MinMaxObserver_tensor_affine.": {
+    "train": 73.60654385158469,
+    "test": 71.40390731485688
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:MovingAverageMinMaxObserver_tensor_affine.": {
+    "train": 73.60654385158469,
+    "test": 71.40390731485688
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:HistogramObserver_tensor_affine.": {
+    "train": 73.47217802293649,
+    "test": 71.07678328032712
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:HistogramObserver_tensor_symmetric.": {
+    "train": 72.98893249885082,
+    "test": 70.64061790095411
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:PerChannelMinMaxObserver_symmetric.": {
+    "train": 73.2388057942317,
+    "test": 71.30395274875056
+  },
+  "activation observer:HistogramObserver_symmetric, weight observer:MovingAveragePerChannelMinMaxObserver_symmetric.": {
+    "train": 73.2388057942317,
+    "test": 71.30395274875056
+  }
+}
