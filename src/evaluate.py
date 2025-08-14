@@ -3,28 +3,20 @@ import time
 import yaml
 import torch
 import argparse
+from sklearn.metrics import accuracy_score
+from tqdm import tqdm
 from src.utils import *
 from src.data_loader import get_data_loaders
 from src.models.cnn_model import M5, QATM5, PTQM5
 from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, QATM5Modular
 from src.train import number_of_correct, get_likely_index
 
-def evaluate_model(model, test_loader, device, checkpoint_path, logger):
-    """Evaluate model performance."""
+def evaluate_model(model, test_loader, device, checkpoint_path, logger, N=500):
+    """Evaluate model performance: size, accuracy, and inference speed."""
     # Model Size
     model_size = os.path.getsize(checkpoint_path)
-    logger.info(f"Model Size: {model_size / 1024:.2f} KB")
+    logger.info(f"1. Model Size: {model_size / 1024:.2f} KB")
 
-    # Inference Speed
-    # element = next(iter(test_loader))
-    # logger.info(f"Element Shape: {element[0].shape}")
-    # dummy_input = next(iter(test_loader))[0][0].unsqueeze(0).to(device)
-    # DEBUG
-    # logger.info(f"Dummy Input Shape: {dummy_input.shape}")
-    # logger.info(f"Test loader: {test_loader}")
-    # logger.info(f"Test loader length: {len(test_loader)}")
-    # logger.info(f"Test loader dataset: {len(test_loader.dataset)}")
-    # logger.info(f"Test loader batch size: {test_loader.batch_size}")
     model.to(device)
     # print("Model Device now:", device) # cpu
     
@@ -48,19 +40,36 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger):
 
     # Accuracy Comparison
     accuracy = test(model, test_loader)
-    logger.info(f"Accuracy: {accuracy:.2f}%")
+    logger.info(f"2. Accuracy: {accuracy * 100:.2f}%")
 
-# @profile
+    # Inference Speed
+    batch = next(iter(test_loader))[0].to(device)
+    # Warmup
+    with torch.no_grad():
+        for _ in range(10):
+            _ = model(batch)
+
+    # Timing
+    start = time.time()
+    with torch.no_grad():
+        for _ in range(N):
+            _ = model(batch)
+    end = time.time()
+    avg_time_ms = (end - start) / N * 1000
+    logger.info(f"3. Average inference time: {avg_time_ms:.2f} ms") 
+
 def test(model, test_loader, device = 'cpu'):
     model.eval()
-    correct = 0
+    all_preds = []
+    all_labels = []
     with torch.no_grad():
-        for data, target in test_loader:
-            # data, target = data.to(device), target.to(device)
+        for data, target in tqdm(test_loader, desc="Evaluating Accuracy"):
+            data = data.cpu()
             output = model(data)
-            pred = get_likely_index(output)
-            correct += number_of_correct(pred, target)
-    accuracy = 100. * correct / len(test_loader.dataset)
+            preds = output.argmax(dim=-1)
+            all_preds.extend(preds.cpu().numpy().flatten())
+            all_labels.extend(target.cpu().numpy().flatten())
+    accuracy = accuracy_score(all_labels, all_preds)
     return accuracy
 
 
@@ -143,5 +152,5 @@ if __name__ == "__main__":
 
     # Evaluate and log results
     logger.info(f"Evaluating model: {args.checkpoint}")
-    evaluate_model(model, train_loader, device, args.checkpoint, logger)
+    # evaluate_model(model, train_loader, device, args.checkpoint, logger)
     evaluate_model(model, test_loader, device, args.checkpoint, logger)
