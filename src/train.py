@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
+from sklearn.metrics import accuracy_score
 import logging
 import sys
 import numpy as np
@@ -34,21 +35,51 @@ def train_model(model, train_loader, test_loader, config, device):
     )
 
     total_batches = len(train_loader) + len(test_loader)
-    
-    with tqdm(total=config["n_epoch"] * total_batches) as pbar:
-        losses = []
+
+    history = {
+        "train_loss": [],
+        "test_loss": [],
+        "test_acc": []
+    }
+
+    log_interval = config["log_interval"]
+
+    with tqdm(total=config["n_epoch"] * len(train_loader)) as pbar:
         
         for epoch in range(1, config["n_epoch"] + 1):
-            epoch_losses = train_epoch(
-                model, train_loader, optimizer, 
-                epoch, config, device, pbar
+            epoch_losses = []
+            for batch_idx, (data, target) in enumerate(train_loader):
+                data = data.to(device)
+                target = target.to(device)
+                output = model(data)
+
+                loss = F.nll_loss(output.squeeze(), target)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                epoch_losses.append(loss.item())
+                pbar.update(1)
+
+                # log every 100 batches
+                if (batch_idx + 1) % log_interval == 0:
+                    avg_recent_loss = sum(epoch_losses[-log_interval:]) / log_interval
+                    history["train_loss"].append(avg_recent_loss)
+                    logger.info(f"Epoch {epoch}, Batch {batch_idx+1}: Train Loss = {avg_recent_loss:.4f}")
+
+            # compute test metrics at the end of epoch
+            accuracy, avg_test_loss = test(model, test_loader, device)
+            history["test_loss"].append(avg_test_loss)
+            history["test_acc"].append(accuracy)
+            logger.info(
+                f"Epoch {epoch} completed: "
+                f"Test Loss = {avg_test_loss:.4f}, "
+                f"Test Acc = {accuracy*100:.2f}%"
             )
-            losses.extend(epoch_losses)
-            
-            test_model(model, test_loader, epoch, device, pbar)
             scheduler.step()
-            
-        return losses
+
+        return history
 
 def train_epoch(model, train_loader, optimizer, epoch, config, device, pbar):
     model.train()
@@ -77,29 +108,28 @@ def train_epoch(model, train_loader, optimizer, epoch, config, device, pbar):
     return epoch_losses
 
 
-def test_model(model, test_loader, epoch, device, pbar):
+def test(model, test_loader, device = 'cpu'):
     model.eval()
-    correct = 0
-    total = 0
+    all_preds = []
+    all_labels = []
+    total_loss = 0.0
+    num_batches = 0
+
     with torch.no_grad():
         for data, target in test_loader:
-
-            data = data.to(device)
-            target = target.to(device)
+            data = data.cpu()
             output = model(data)
 
-            pred = get_likely_index(output)
-            correct += number_of_correct(pred, target)
-            total += target.size(0)
+            loss = F.nll_loss(output.squeeze(), target, reduction='sum')
+            total_loss += loss.item()
+            num_batches += data.size(0)
 
-            # update progress bar
-            pbar.update(1)
-    
-    accuracy = 100. * correct / total if total > 0 else 0
-
-    pbar.set_description(f"Epoch {epoch} [Test Accuracy: {accuracy:.2f}%]")
-
-    logger.info(f"Test Epoch: {epoch} Accuracy: {accuracy:.2f}% ({correct}/{total})")
+            preds = output.argmax(dim=-1)
+            all_preds.extend(preds.cpu().numpy().flatten())
+            all_labels.extend(target.cpu().numpy().flatten())
+    avg_loss = total_loss / num_batches    
+    accuracy = accuracy_score(all_labels, all_preds)
+    return accuracy, avg_loss
 
 def number_of_correct(pred, target):
     # count number of correct predictions
