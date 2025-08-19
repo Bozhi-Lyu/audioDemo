@@ -17,6 +17,7 @@ model:
     conv_kernel_sizes: [80, 3, 3, 3]
     pretrained_path: "./models/cnn_fp32_model.pth"
     version: "demo"
+  output: "./models/cnn_qat_test.pth"
 
 train:
   lr: 0.0001

@@ -5,10 +5,11 @@ from src.models.cnn_model import M5, QATM5, PTQM5
 from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, PTQM5_LayerWiseQuant, QATM5Modular, QATM5_LayerWiseQuant
 from src.train import set_seed, train_model
 import argparse
+import json
 
 def main(args):
     logger = setup_logging()
-    device = get_device()
+    device = "cpu"
     
     # Load config
     with open(args.config) as f:
@@ -37,24 +38,22 @@ def main(args):
         print("Missing:", missing_keys) if len(missing_keys) > 0 else None
         print("Unexpected:", unexpected_keys) if len(unexpected_keys) > 0 else None
 
-        # with torch.no_grad():
-        #     model.fc1.weight.copy_(fp32_checkpoint["fc1.weight"])
-        #     model.fc1.bias.copy_(fp32_checkpoint["fc1.bias"])
-
         # model.eval() #?
         model.fuse_model()
         model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
 
         model.train()
         torch.ao.quantization.prepare_qat(model, inplace=True)
-        train_model(model, train_loader, test_loader, config["train"], device)
-
+        history = train_model(model, train_loader, test_loader, config["train"], device)
+        
+        with open('history.json', 'w') as fp:
+            json.dump(history, fp)
         # Quantize and Save model
         model.to("cpu")
         logger.info("Quantizing model...")
         model.eval()
         torch.ao.quantization.convert(model, inplace=True)
-        torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+        torch.save(model.state_dict(), config["model"]["output"])
 
 
     elif config["model_type"] == "cnn_fp32":
@@ -76,7 +75,7 @@ def main(args):
         torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
 
     
-    elif config["model_type"] == "cnn_ptq":
+    elif config["model_type"] == "cnn_ptq_static":
         set_seed(config["model"]["base_cnn"]["seed"])
         # Load FP32 model
         model_fp32 = PTQM5Modular(n_input=model_config["n_input"],
@@ -96,19 +95,12 @@ def main(args):
             for data, _ in validate_loader:
                 data = data.to("cpu")
                 model_fp32(data)
-        
-        # # DEBUG
-        # logger.info("Post Training Quantizing model...")
-        # logger.info(f"fp32 model: {model_fp32}")
 
         # Convert to PTQ model
         model = torch.ao.quantization.convert(model_fp32, inplace=False)
 
-        # # DEBUG
-        # logger.info(f"PTQ model: {model}")
-
         # Save model
-        torch.save(model.state_dict(), f"./models/{config['model_type']}_model.pth")
+        torch.save(model.state_dict(), config["model"]["output"])
 
         
     elif config["model_type"] == "cnn_ptq_LayerWiseQuant":

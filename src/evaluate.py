@@ -4,12 +4,9 @@ import yaml
 import torch
 import argparse
 from sklearn.metrics import accuracy_score
-from tqdm import tqdm
 from src.utils import *
 from src.data_loader import get_data_loaders
-from src.models.cnn_model import M5, QATM5, PTQM5
 from src.models.cnn_model_LayerWiseQuant import M5Modular, PTQM5Modular, QATM5Modular
-from src.train import number_of_correct, get_likely_index
 
 def evaluate_model(model, test_loader, device, checkpoint_path, logger, N=500):
     """Evaluate model performance: size, accuracy, and inference speed."""
@@ -40,7 +37,7 @@ def evaluate_model(model, test_loader, device, checkpoint_path, logger, N=500):
 
     # Accuracy Comparison
     accuracy = test(model, test_loader)
-    logger.info(f"2. Accuracy: {accuracy * 100:.2f}%")
+    logger.info(f"2. Accuracy: {accuracy * 100:.4f}%")
 
     # Inference Speed
     batch = next(iter(test_loader))[0].to(device)
@@ -63,7 +60,7 @@ def test(model, test_loader, device = 'cpu'):
     all_preds = []
     all_labels = []
     with torch.no_grad():
-        for data, target in tqdm(test_loader, desc="Evaluating Accuracy"):
+        for data, target in test_loader:
             data = data.cpu()
             output = model(data)
             preds = output.argmax(dim=-1)
@@ -152,5 +149,5 @@ if __name__ == "__main__":
 
     # Evaluate and log results
     logger.info(f"Evaluating model: {args.checkpoint}")
-    # evaluate_model(model, train_loader, device, args.checkpoint, logger)
+    evaluate_model(model, train_loader, device, args.checkpoint, logger)
     evaluate_model(model, test_loader, device, args.checkpoint, logger)

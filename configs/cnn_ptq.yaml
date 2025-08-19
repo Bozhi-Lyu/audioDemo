@@ -5,7 +5,7 @@ data:
   batch_size: 256
   version: "v0.1"
 
-model_type: "cnn_ptq"
+model_type: "cnn_ptq_static"
 
 model:
   base_cnn:
@@ -17,3 +17,4 @@ model:
     pretrained_path: "./models/cnn_fp32_model.pth"
     seed: 42
     version: "demo"
+  output: "./models/cnn_ptq_static_test.pth"
