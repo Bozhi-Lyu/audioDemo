@@ -68,20 +68,42 @@ def get_fresh_model():
 
 # Define observer configurations
 activation_observers = {
-    "MinMaxObserver": MinMaxObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine, reduce_range=True),
-    "MovingAverageMinMaxObserver": MovingAverageMinMaxObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine, reduce_range=True),
-    "HistogramObserver_affine": HistogramObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine, reduce_range=True),
-    "HistogramObserver_symmetric": HistogramObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_symmetric, reduce_range=True),
+    "MinMaxObserver": MinMaxObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine),
+    # "MovingAverageMinMaxObserver": MovingAverageMinMaxObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine), # not for PTQ, only for QAT.
+    "HistogramObserver_affine": HistogramObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_affine),
+    "HistogramObserver_symmetric": HistogramObserver.with_args(dtype=torch.quint8, qscheme=torch.per_tensor_symmetric),
 }
 
 weight_observers = {
-    "MinMaxObserver_tensor_affine": MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_affine),
-    "MovingAverageMinMaxObserver_tensor_affine": MovingAverageMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_affine),
-    "HistogramObserver_tensor_affine": HistogramObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_affine),
-    "HistogramObserver_tensor_symmetric": HistogramObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric),
-    "PerChannelMinMaxObserver_symmetric": PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric),
-    "MovingAveragePerChannelMinMaxObserver_symmetric": MovingAveragePerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric),
+    # Standard choice
+    "PerChannelMinMaxObserver_symmetric": PerChannelMinMaxObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_channel_symmetric
+    ), # MINMAX CS
+    "PerChannelMinMaxObserver_affine": PerChannelMinMaxObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_channel_affine
+    ), # MINMAX CA
 
+    # Fallback / simple methods
+    "MinMaxObserver_per_tensor_affine": MinMaxObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_tensor_affine
+    ), # MINMAX TA
+    "MinMaxObserver_per_tensor_symmetric": MinMaxObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_tensor_symmetric
+    ), # MINMAX TS
+
+    # Alternative calibration methods
+    "HistogramObserver_per_tensor_affine": HistogramObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_tensor_affine
+    ), #HISTOGRAM TA
+    "HistogramObserver_per_tensor_symmetric": HistogramObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_tensor_symmetric
+    ),  #HISTOGRAM TS
+    "HistogramObserver_per_channel_affine": HistogramObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_channel_affine
+    ), #HISTOGRAM CA
+    "HistogramObserver_per_channel_symmetric": HistogramObserver.with_args(
+        dtype=torch.qint8, qscheme=torch.per_channel_symmetric
+    ), #HISTOGRAM CS
 }
 
 # Test all qconfigs
