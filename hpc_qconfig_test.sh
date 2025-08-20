@@ -19,4 +19,4 @@ conda activate audioml
 # conda activate audioml
 
 python -m pip install -e . -q
-python PTQ_calibration_test.py
+python PTQ_calibration_test.py --config configs/hpc_qconfig_test.yaml
